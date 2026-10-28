@@ -1,0 +1,48 @@
+name: Build patched APK
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/widget-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install NDK and CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager "ndk;30.0.14904198" "cmake;3.22.1"
+      - name: Signing
+        working-directory: android
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_FILE }}" | base64 --decode > release.keystore
+          cat > local.properties <<PROPS
+          RELEASE_STORE_FILE=../release.keystore
+          RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=librepods
+          RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
+          PROPS
+      - name: Build
+        working-directory: android
+        run: ./gradlew --no-daemon assembleFossRelease
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/foss/release/app-foss-release.apk librepods-notification-patch.apk
+          gh release create "patched-${{ github.run_number }}" librepods-notification-patch.apk \
+            --repo "${{ github.repository }}" --title "Patched build ${{ github.run_number }}" \
+            --notes "LibrePods FOSS build whose battery notification isn't ongoing, so launcher widgets can read it." --latest

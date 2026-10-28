@@ -2081,7 +2081,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                             }
                         } ?: ""
                     }""").setContentIntent(pendingIntent).setCategory(Notification.CATEGORY_STATUS)
-                    .setPriority(NotificationCompat.PRIORITY_LOW).setOngoing(true)
+                    .setPriority(NotificationCompat.PRIORITY_LOW).setOngoing(false).setOnlyAlertOnce(true).setSilent(true)
 
             if (disconnectedBecauseReversed) {
                 updatedNotificationBuilder.addAction(
