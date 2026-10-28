@@ -931,6 +931,12 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                         ?.get(0) ?: 0x00.toByte()))
                     sendANCBroadcast()
                     updateNoiseControlWidget()
+                    updateNotificationContent(
+                        true,
+                        this@AirPodsService.getSharedPreferences("settings", MODE_PRIVATE)
+                            .getString("name", device?.name),
+                        batteryNotification.getBattery()
+                    )
                 }
             }
 
@@ -2080,7 +2086,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                                 ""
                             }
                         } ?: ""
-                    }""").setContentIntent(pendingIntent).setCategory(Notification.CATEGORY_STATUS)
+                    } ${listeningModeLabel()}""").setContentIntent(pendingIntent).setCategory(Notification.CATEGORY_STATUS)
                     .setPriority(NotificationCompat.PRIORITY_LOW).setOngoing(false).setOnlyAlertOnce(true).setSilent(true)
 
             if (disconnectedBecauseReversed) {
@@ -2944,6 +2950,14 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 //            batteryNotification.setBattery(CrossDevice.batteryBytes)
 //        }
         return batteryNotification.getBattery()
+    }
+
+    fun listeningModeLabel(): String = when (ancNotification.status) {
+        1 -> "Mode: Off"
+        2 -> "Mode: ANC"
+        3 -> "Mode: Transparency"
+        4 -> "Mode: Adaptive"
+        else -> ""
     }
 
     fun getANC(): Int {
